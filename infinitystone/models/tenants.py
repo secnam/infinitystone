@@ -27,15 +27,40 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-import infinitystone.models
-from luxon import register_middleware
+from uuid import uuid4
 
-from psychokinetic.middleware.wsgi.token import Token
-from psychokinetic.middleware.policy import Policy
+from luxon import database_model
+from luxon import Model
+from luxon import SQLModel
+from luxon import Uuid
+from luxon import String
+from luxon import Text
+from luxon import DateTime
+from luxon import Boolean
+from luxon import Email
+from luxon import Phone
+from luxon import Enum
+from luxon import Index
+from luxon import ForeignKey
+from luxon import UniqueIndex
+from luxon import Username
+from luxon import Fqdn
+from luxon.utils.timezone import now
 
-register_middleware(Token)
-register_middleware(Policy)
+from infinitystone.models.domains import luxon_domain
 
-import luxon.resources.wsgi.index
-
-import infinitystone.views
+@database_model()
+class luxon_tenant(SQLModel):
+    id = Uuid(default=uuid4, internal=True)
+    domain = Fqdn(internal=True)
+    tenant_id = Uuid(internal=True)
+    name = String(max_length=100, null=False)
+    enabled = Boolean(default=True)
+    creation_time = DateTime(default=now, readonly=True)
+    unique_tenant = UniqueIndex(domain, name)
+    tenants = Index(id, domain)
+    tenants_search_name = Index(domain, name)
+    tenants_per_domain = Index(domain)
+    primary_key = id
+    tenant_domain_ref = ForeignKey(domain, luxon_domain.name)
+    tenant_parent_ref = ForeignKey(tenant_id, id)

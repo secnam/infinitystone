@@ -27,15 +27,21 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-import infinitystone.models
-from luxon import register_middleware
+from luxon import GetLogger
+from luxon import register_resource
 
-from psychokinetic.middleware.wsgi.token import Token
-from psychokinetic.middleware.policy import Policy
+from infinitystone.utils.auth import user_domains
 
-register_middleware(Token)
-register_middleware(Policy)
+log = GetLogger(__name__)
 
-import luxon.resources.wsgi.index
-
-import infinitystone.views
+@register_resource('GET', '/v1/rbac/domains')
+def rbac_domains(req, resp):
+    search = req.query_params.get('term')
+    domains_list = user_domains(req.token.user_id)
+    if search is not None:
+        filtered = []
+        for domain in domains_list:
+            if search in domain:
+                filtered.append(domain)
+        return filtered
+    return domains_list

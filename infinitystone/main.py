@@ -43,12 +43,57 @@ from luxon.core.handlers.script import Script
 from luxon.utils.encoding import if_bytes_to_unicode
 from luxon import register_resource
 from luxon import register_middleware
+from luxon.middleware.script.auth import Auth
 from luxon.utils.formatting import format_obj
 
-from infinitystone import metadata
+from tachyonic import metadata
+
+@register_resource('SCRIPT', 'endpoints')
+def endpoints(req, resp):
+    group = req.parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-l',
+                       action='store_true',
+                       dest='list_endpoints',
+                       default=False,
+                       help='List endpoints')
+    group.add_argument('-d',
+                       dest='delete_id',
+                       help='Delete Endpoint by ID')
+    group.add_argument('-c',
+                       dest='endpoint_name',
+                       help='Create Endpoint')
+
+    req.parser.add_argument('--uri',
+                            help='URI for endpoint',
+                            default=None)
+    req.parser.add_argument('--interface',
+                            help='Inteface (public|internal|admin)',
+                            default='public')
+    req.parser.add_argument('--region',
+                            help='Region name for endpoint',
+                            default='default')
+    args = req.parser.parse_args()
+    if args.endpoint_name is not None:
+        res = g.api.new_endpoint(args.endpoint_name,
+                                 args.interface,
+                                 args.region,
+                                 args.uri)
+        return format_obj(res.json)
+    elif args.list_endpoints is True:
+        res = g.api.list_endpoints()
+        return format_obj(res.json)
+    elif args.delete_id is not None:
+        res = g.api.delete_endpoint(args.delete_id)
 
 def main(argv):
-    pass
+    script = Script(__name__, app_root='.')
+    register_middleware(Auth)
+
+    val = script(metadata).read()
+    if val:
+        val = if_bytes_to_unicode(val)
+        print(val)
+
 
 def entry_point():
     """Zero-argument entry point for use with setuptools/distribute."""

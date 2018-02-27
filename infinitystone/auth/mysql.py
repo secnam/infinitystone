@@ -27,15 +27,19 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-import infinitystone.models
-from luxon import register_middleware
+from luxon import db
+from luxon.utils.password import valid as is_valid_password
+from psychokinetic.auth.driver import BaseDriver
 
-from psychokinetic.middleware.wsgi.token import Token
-from psychokinetic.middleware.policy import Policy
+from infinitystone.utils.auth import authorize
 
-register_middleware(Token)
-register_middleware(Policy)
+class Mysql(BaseDriver):
+    def authenticate(self, username, password, domain=None):
+            valid, credentials = authorize('tachyonic', username, password, domain)
+            if valid is True:
+                # Validate Password againts stored HASHED Value.
+                if is_valid_password(password, credentials['password']):
 
-import luxon.resources.wsgi.index
-
-import infinitystone.views
+                    self.new_token(user_id=credentials['user_id'],
+                                   username=username)
+            return valid
