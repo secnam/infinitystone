@@ -27,15 +27,48 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-import infinitystone.models
-from luxon import register_middleware
+from luxon import g
+from luxon import GetLogger
+from luxon.exceptions import AccessDenied
+from luxon import register_resources
 
-from psychokinetic.middleware.wsgi.token import Token
-from psychokinetic.middleware.policy import Policy
+log = GetLogger(__name__)
 
-register_middleware(Token)
-register_middleware(Policy)
+@register_resources()
+class Token(object):
+    """Token Middleware.
 
-import luxon.resources.wsgi.index
+    Validates token and sets request.token object.
 
-import infinitystone.views
+    Luxon tokens use PKI. Its required to have the private key to sign
+    new tokens on the tachyonic api. Endpoints will require the public cert
+    to validate tokens authenticity.
+
+    The tokens should be stored in the application root. Usually where the wsgi
+    file is located.
+
+    Creating token:
+        openssl req  -nodes -new -x509  -keyout token.key -out token.cert
+    """
+    def __init__(self):
+        g.router.add('GET', '/v1/token', self.get)
+        g.router.add('POST', '/v1/token', self.post)
+        g.router.add('PATCH', '/v1/token', self.patch, tag='login')
+
+    def get(self, req, resp):
+        return req.token
+
+    def post(self, req, resp):
+        request_object = req.json
+        req.token.login(request_object.get('username',
+                                           None),
+                    request_object.get('password', None),
+                    request_object.get('domain', None))
+        return req.token
+
+    def patch(self, req, resp):
+        request_object = req.json
+        req.token.scope_token(req.token.token['token'],
+                              request_object.get('domain'),
+                              request_object.get('tenant_id'))
+        return req.token

@@ -27,15 +27,44 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-import infinitystone.models
-from luxon import register_middleware
+from luxon import g
+from luxon import db
+from luxon import GetLogger
+from luxon import register_resource
 
-from psychokinetic.middleware.wsgi.token import Token
-from psychokinetic.middleware.policy import Policy
+from infinitystone.models.tenants import luxon_tenant
 
-register_middleware(Token)
-register_middleware(Policy)
+log = GetLogger(__name__)
 
-import luxon.resources.wsgi.index
+@register_resource('GET', '/v1/tenants', tag='admin')
+def tenants(req, resp):
+    tenants = luxon_tenant()
+    tenants.sql_api()
+    return tenants
 
-import infinitystone.views
+@register_resource('POST', '/v1/tenant', tag='admin')
+def new_tenant(req, resp):
+    tenant = luxon_tenant(model=dict)
+    tenant.update(req.json)
+    tenant.commit()
+    return tenant
+
+@register_resource([ 'PUT', 'PATCH' ], '/v1/tenant/{id}', tag='admin')
+def update_tenant(req, resp, id):
+    tenant = luxon_tenant(model=dict)
+    tenant.sql_id(id)
+    tenant.update(req.json)
+    tenant.commit()
+    return tenant
+
+@register_resource('GET', '/v1/tenant/{id}', tag='admin')
+def view_tenant(req, resp, id):
+    tenant = luxon_tenant(model=dict)
+    tenant.sql_id(id)
+    return tenant
+
+@register_resource('DELETE', '/v1/tenant/{id}', tag='admin')
+def delete_tenant(req, resp, id):
+    tenant = luxon_tenant(model=dict)
+    tenant.sql_id(id)
+    tenant.delete()

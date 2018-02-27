@@ -27,15 +27,44 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-import infinitystone.models
-from luxon import register_middleware
+from luxon import g
+from luxon import db
+from luxon import GetLogger
+from luxon import register_resource
 
-from psychokinetic.middleware.wsgi.token import Token
-from psychokinetic.middleware.policy import Policy
+from infinitystone.models.domains import luxon_domain
 
-register_middleware(Token)
-register_middleware(Policy)
+log = GetLogger(__name__)
 
-import luxon.resources.wsgi.index
+@register_resource('GET', '/v1/domains', tag='admin')
+def domains(req, resp):
+    domains = luxon_domain()
+    domains.sql_api()
+    return domains
 
-import infinitystone.views
+@register_resource('POST', '/v1/domain', tag='admin')
+def new_domain(req, resp):
+    domain = luxon_domain(model=dict)
+    domain.update(req.json)
+    domain.commit()
+    return domain
+
+@register_resource([ 'PUT', 'PATCH' ], '/v1/domain/{id}', tag='admin')
+def update_domain(req, resp, id):
+    domain = luxon_domain(model=dict)
+    domain.sql_id(id)
+    domain.update(req.json)
+    domain.commit()
+    return domain
+
+@register_resource('GET', '/v1/domain/{id}', tag='admin')
+def view_domain(req, resp, id):
+    domain = luxon_domain(model=dict)
+    domain.sql_id(id)
+    return domain
+
+@register_resource('DELETE', '/v1/domain/{id}', tag='admin')
+def delete_domain(req, resp, id):
+    domain = luxon_domain(model=dict)
+    domain.sql_id(id)
+    domain.delete()

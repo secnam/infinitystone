@@ -27,15 +27,44 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 # THE POSSIBILITY OF SUCH DAMAGE.
-import infinitystone.models
-from luxon import register_middleware
+from luxon import g
+from luxon import db
+from luxon import GetLogger
+from luxon import register_resource
 
-from psychokinetic.middleware.wsgi.token import Token
-from psychokinetic.middleware.policy import Policy
+from infinitystone.models.roles import luxon_role
 
-register_middleware(Token)
-register_middleware(Policy)
+log = GetLogger(__name__)
 
-import luxon.resources.wsgi.index
+@register_resource('GET', '/v1/roles', tag='admin')
+def roles(req, resp):
+    roles = luxon_role()
+    roles.sql_api()
+    return roles
 
-import infinitystone.views
+@register_resource('POST', '/v1/role', tag='admin')
+def new_role(req, resp):
+    role = luxon_role(model=dict)
+    role.update(req.json)
+    role.commit()
+    return role
+
+@register_resource([ 'PUT', 'PATCH' ], '/v1/role/{id}', tag='admin')
+def update_role(req, resp, id):
+    role = luxon_role(model=dict)
+    role.sql_id(id)
+    role.update(req.json)
+    role.commit()
+    return role
+
+@register_resource('GET', '/v1/role/{id}', tag='admin')
+def view_role(req, resp, id):
+    role = luxon_role(model=dict)
+    role.sql_id(id)
+    return role
+
+@register_resource('DELETE', '/v1/role/{id}', tag='admin')
+def delete_role(req, resp, id):
+    role = luxon_role(model=dict)
+    role.sql_id(id)
+    role.delete()
