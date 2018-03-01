@@ -31,52 +31,53 @@ from luxon import g
 from luxon import GetLogger
 from luxon import register_resource
 
+from infinitystone.utils.api import model
 from infinitystone.models.users import luxon_user
 
 log = GetLogger(__name__)
 
 @register_resource('GET', '/v1/users', tag='role:root')
 def users(req, resp):
-    users = luxon_user(hide=('password',))
-    users.sql_api()
+    users = model(luxon_user, hide=('password',))
     return users
 
 @register_resource('GET', '/v1/user/{id}', tag='role:root')
 def user(req, resp, id):
-    users = luxon_user(model=dict, hide=('password',))
-    users.sql_id(id)
-    return users
+    user = model(luxon_user, id=id, hide=('password',))
+    return user
 
 @register_resource('POST', '/v1/user', tag='role:root')
 def new_user(req, resp):
-    user = luxon_user(model=dict, hide=('password',))
     new_user = req.json.copy()
     new_user['tag'] = 'tachyonic'
+
     if 'password' in new_user and new_user['password'] is not None:
         new_user['password'] = hash(new_user['password'])
     else:
         del new_user['password']
-    user.update(new_user)
+
+    user = model(luxon_user, values=new_user, hide=('password',))
     user.commit()
+
     return user
 
 @register_resource([ 'PUT', 'PATCH' ], '/v1/user/{id}', tag='role:root')
 def update_user(req, resp, id):
-    user = luxon_user(model=dict, hide=('password',))
-    user.sql_id(id)
     update_user = req.json.copy()
     update_user['tag'] = 'tachyonic'
+
     if 'password' in update_user and update_user['password'] is not None:
         update_user['password'] = hash(update_user['password'])
     else:
         del update_user['password']
 
-    user.update(update_user)
+    user = model(luxon_user, id=id, values=update_user, hide=('password',))
     user.commit()
+
     return user
+
 
 @register_resource('DELETE', '/v1/user/{id}', tag='role:root')
 def delete_user(req, resp, id):
-    user = luxon_user(model=dict, hide=('password',))
-    user.sql_id(id)
+    user = model(luxon_user, id=id, hide=('password',))
     user.delete()

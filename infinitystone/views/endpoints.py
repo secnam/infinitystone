@@ -31,6 +31,7 @@ from luxon import db
 from luxon import GetLogger
 from luxon import register_resource
 
+from infinitystone.utils.api import model
 from infinitystone.models.endpoints import luxon_endpoint
 
 log = GetLogger(__name__)
@@ -47,34 +48,28 @@ def regions(req, resp):
 
 @register_resource('GET', '/v1/endpoints')
 def endpoints(req, resp):
-    endpoints = luxon_endpoint()
-    endpoints.sql_api()
-    resp.set_cache_max_age(120)
+    endpoints = model(luxon_endpoint)
     return endpoints
 
 @register_resource('POST', '/v1/endpoint', tag='role:root')
 def new_endpoint(req, resp):
-    endpoint = luxon_endpoint(model=dict)
-    endpoint.update(req.json)
+    endpoint = model(luxon_endpoint, values=req.json)
     endpoint.commit()
     return endpoint
 
 @register_resource([ 'PUT', 'PATCH' ], '/v1/endpoint/{id}', tag='role:root')
 def update_endpoint(req, resp, id):
-    endpoint = luxon_endpoint(model=dict)
-    endpoint.sql_id(id)
-    endpoint.update(req.json)
+    endpoint = model(luxon_endpoint, id=id, values=req.json)
     endpoint.commit()
     return endpoint
 
 @register_resource('GET', '/v1/endpoint/{id}', tag='role:root')
 def view_endpoint(req, resp, id):
-    endpoint = luxon_endpoint(model=dict)
-    endpoint.sql_id(id)
+    endpoint = model(luxon_endpoint, id=id)
+    endpoint.commit()
     return endpoint
 
 @register_resource('DELETE', '/v1/endpoint/{id}', tag='role:root')
 def delete_endpoint(req, resp, id):
-    endpoint = luxon_endpoint(model=dict)
-    endpoint.sql_id(id)
+    endpoint = model(luxon_endpoint, id=id)
     endpoint.delete()

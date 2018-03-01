@@ -32,39 +32,33 @@ from luxon import db
 from luxon import GetLogger
 from luxon import register_resource
 
+from infinitystone.utils.api import model
 from infinitystone.models.tenants import luxon_tenant
 
 log = GetLogger(__name__)
 
 @register_resource('GET', '/v1/tenants', tag='admin')
 def tenants(req, resp):
-    tenants = luxon_tenant()
-    tenants.sql_api()
+    tenants = model(luxon_tenant)
     return tenants
 
 @register_resource('POST', '/v1/tenant', tag='admin')
 def new_tenant(req, resp):
-    tenant = luxon_tenant(model=dict)
-    tenant.update(req.json)
-    tenant.commit()
+    tenant = model(luxon_tenant, values=req.json)
     return tenant
 
 @register_resource([ 'PUT', 'PATCH' ], '/v1/tenant/{id}', tag='admin')
 def update_tenant(req, resp, id):
-    tenant = luxon_tenant(model=dict)
-    tenant.sql_id(id)
-    tenant.update(req.json)
+    tenant = model(luxon_tenant, id=id, values=req.json)
     tenant.commit()
     return tenant
 
 @register_resource('GET', '/v1/tenant/{id}', tag='admin')
 def view_tenant(req, resp, id):
-    tenant = luxon_tenant(model=dict)
-    tenant.sql_id(id)
+    tenant = model(luxon_tenant, id=id)
     return tenant
 
 @register_resource('DELETE', '/v1/tenant/{id}', tag='admin')
 def delete_tenant(req, resp, id):
-    tenant = luxon_tenant(model=dict)
-    tenant.sql_id(id)
+    tenant = model(luxon_tenant, id=id)
     tenant.delete()
