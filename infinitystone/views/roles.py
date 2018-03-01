@@ -32,39 +32,33 @@ from luxon import db
 from luxon import GetLogger
 from luxon import register_resource
 
+from infinitystone.utils.api import model
 from infinitystone.models.roles import luxon_role
 
 log = GetLogger(__name__)
 
 @register_resource('GET', '/v1/roles', tag='admin')
 def roles(req, resp):
-    roles = luxon_role()
-    roles.sql_api()
+    roles = model(luxon_role)
     return roles
 
 @register_resource('POST', '/v1/role', tag='admin')
 def new_role(req, resp):
-    role = luxon_role(model=dict)
-    role.update(req.json)
-    role.commit()
+    role = model(luxon_role, values=req.json)
     return role
 
 @register_resource([ 'PUT', 'PATCH' ], '/v1/role/{id}', tag='admin')
 def update_role(req, resp, id):
-    role = luxon_role(model=dict)
-    role.sql_id(id)
-    role.update(req.json)
+    role = model(luxon_role, id=id, values=req.json)
     role.commit()
     return role
 
 @register_resource('GET', '/v1/role/{id}', tag='admin')
 def view_role(req, resp, id):
-    role = luxon_role(model=dict)
-    role.sql_id(id)
+    role = model(luxon_role, id=id)
     return role
 
 @register_resource('DELETE', '/v1/role/{id}', tag='admin')
 def delete_role(req, resp, id):
-    role = luxon_role(model=dict)
-    role.sql_id(id)
+    role = model(luxon_role, id=id)
     role.delete()
