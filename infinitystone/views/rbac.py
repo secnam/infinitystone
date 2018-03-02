@@ -45,3 +45,20 @@ def rbac_domains(req, resp):
                 filtered.append(domain)
         return filtered
     return domains_list
+
+@register_resource('GET', '/v1/rbac/user/{id}')
+def user_roles(req, resp, id):
+    pass
+
+@register_resource('POST', '/v1/rbac/user/{id}/{role}')
+@register_resource('POST', '/v1/rbac/user/{id}/{role}/{domain}')
+@register_resource('POST', '/v1/rbac/user/{id}/{role}/{domain}/{tenant_id}')
+def add_user_role(req, resp, id, role, domain=None, tenant_id=None):
+    pass
+
+@register_resource('DELETE', '/v1/rbac/user/{id}/{role}')
+@register_resource('DELETE', '/v1/rbac/user/{id}/{role}/{domain}')
+@register_resource('DELETE', '/v1/rbac/user/{id}/{role}/{domain}/{tenant_id}')
+def rm_user_role(req, resp, id, role, domain=None, tenant_id=None):
+    pass
+
