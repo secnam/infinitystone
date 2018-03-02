@@ -30,6 +30,7 @@
 from luxon import g
 from luxon import GetLogger
 from luxon import register_resource
+from luxon.utils.password import hash
 
 from infinitystone.utils.api import model
 from infinitystone.models.users import luxon_user

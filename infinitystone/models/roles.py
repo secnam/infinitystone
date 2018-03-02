@@ -48,12 +48,12 @@ from luxon.utils.timezone import now
 
 ROLES = [
     ('00000000-0000-0000-0000-000000000000', 'Root', None, now()),
-    (str(uuid4()), 'Operations', None, '0000-00-00 00:00:00'),
-    (str(uuid4()), 'Administrator', None, '0000-00-00 00:00:00'),
-    (str(uuid4()), 'Account Manager', None, '0000-00-00 00:00:00'),
-    (str(uuid4()), 'Billing', None, '0000-00-00 00:00:00'),
-    (str(uuid4()), 'Customer', None, '0000-00-00 00:00:00'),
-    (str(uuid4()), 'Support', None, '0000-00-00 00:00:00'),
+    (str(uuid4()), 'Operations', None, now()),
+    (str(uuid4()), 'Administrator', None, now()),
+    (str(uuid4()), 'Account Manager', None, now()),
+    (str(uuid4()), 'Billing', None, now()),
+    (str(uuid4()), 'Customer', None, now()),
+    (str(uuid4()), 'Support', None, now()),
 ]
 
 @database_model()
