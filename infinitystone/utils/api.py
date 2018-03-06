@@ -40,7 +40,6 @@ def model(ModelClass, id=None, values=None, hide=None):
     model_name = ModelClass.model_name
     primary_key = ModelClass.primary_key
 
-
     if id is not None or values is not None:
         model = ModelClass(model=dict, hide=hide)
     else:
@@ -163,7 +162,9 @@ def model(ModelClass, id=None, values=None, hide=None):
         crsr = conn.execute(query, context_values)
         result = crsr.fetchall()
         crsr.commit()
-        model._sql_parse(result)
+
+        if req.method != "POST":
+            model._sql_parse(result)
 
         view_rows = len(result)
         filtered_rows = total_rows - view_rows
