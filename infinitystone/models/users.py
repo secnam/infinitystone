@@ -64,7 +64,7 @@ class luxon_user(SQLModel):
     tag = String(hidden=True, max_length=30, null=False)
     domain = Fqdn(internal=True)
     tenant_id = Uuid(internal=True)
-    username = Username(max_length=100, null=False, readonly=True)
+    username = Username(max_length=100, null=False)
     password = String(max_length=100, null=True)
     email = Email(max_length=255)
     name = String(max_length=100)
