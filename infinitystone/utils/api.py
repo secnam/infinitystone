@@ -163,7 +163,8 @@ def model(ModelClass, id=None, values=None, hide=None):
         crsr = conn.execute(query, context_values)
         result = crsr.fetchall()
         crsr.commit()
-        model._sql_parse(result)
+        if values is None:
+            model._sql_parse(result)
 
         view_rows = len(result)
         filtered_rows = total_rows - view_rows

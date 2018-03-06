@@ -45,6 +45,7 @@ def tenants(req, resp):
 @register_resource('POST', '/v1/tenant', tag='admin')
 def new_tenant(req, resp):
     tenant = model(luxon_tenant, values=req.json)
+    tenant.commit()
     return tenant
 
 @register_resource([ 'PUT', 'PATCH' ], '/v1/tenant/{id}', tag='admin')

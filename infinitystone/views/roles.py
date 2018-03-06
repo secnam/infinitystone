@@ -45,6 +45,7 @@ def roles(req, resp):
 @register_resource('POST', '/v1/role', tag='admin')
 def new_role(req, resp):
     role = model(luxon_role, values=req.json)
+    role.commit()
     return role
 
 @register_resource([ 'PUT', 'PATCH' ], '/v1/role/{id}', tag='admin')
