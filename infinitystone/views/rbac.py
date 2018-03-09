@@ -29,10 +29,50 @@
 # THE POSSIBILITY OF SUCH DAMAGE.
 from luxon import GetLogger
 from luxon import register_resource
+from luxon import register_resources
+from luxon import g
+from luxon.exceptions import ValidationError
+from luxon import db
+from luxon.utils.timezone import now
+
+from uuid import uuid4
+import json
+
 
 from infinitystone.utils.auth import user_domains
 
 log = GetLogger(__name__)
+
+def checkUnique(conn, id, role, domain, tenant_id):
+    """Function to check if use role is Unique.
+
+    Args:
+        conn (obj): DB connection object.
+        id (str): UUID of user.
+        role (str): UUID of role.
+        domain (str): Name of the domain.
+        tenant_id (str): UUID of the tenant.
+    """
+    sql = "SELECT id FROM luxon_user_role WHERE " \
+          "user_id=? AND role_id=? AND domain "
+    vals = [id, role]
+    if domain is None:
+        sql += "IS NULL"
+    else:
+        sql += "=?"
+        vals.append(domain)
+    if tenant_id is None:
+        sql += " AND tenant_id IS NULL"
+    else:
+        sql += " AND tenant_id=?"
+        vals.append(tenant_id)
+
+    cur = conn.execute(sql, (vals))
+    if cur.fetchone():
+        raise ValidationError("Entry for user %s role %s " \
+                              "already exists on domain %s" \
+                              " and tenant %s. PUT don't POST" \
+                              % (id, role, domain, tenant_id))
 
 @register_resource('GET', '/v1/rbac/domains')
 def rbac_domains(req, resp):
@@ -50,11 +90,38 @@ def rbac_domains(req, resp):
 def user_roles(req, resp, id):
     pass
 
-@register_resource('POST', '/v1/rbac/user/{id}/{role}')
-@register_resource('POST', '/v1/rbac/user/{id}/{role}/{domain}')
-@register_resource('POST', '/v1/rbac/user/{id}/{role}/{domain}/{tenant_id}')
-def add_user_role(req, resp, id, role, domain=None, tenant_id=None):
-    pass
+@register_resources()
+class UserRoles():
+    def __init__(self):
+        g.router.add('POST', '/v1/rbac/user/{id}/{role}',
+                     self.add_user_role, tag="admin")
+        g.router.add('POST', '/v1/rbac/user/{id}/{role}/{domain}',
+                     self.add_user_role, tag="admin")
+        g.router.add('POST', '/v1/rbac/user/{id}/{role}/{domain}/{tenant_id}',
+                     self.add_user_role, tag="admin")
+
+    def add_user_role(self, req, resp, id, role, domain=None, tenant_id=None):
+        with db() as conn:
+            # Even though we have unique constraint, sqlite
+            # does not consider null as unique:
+            # ref https://stackoverflow.com/questions/22699409/sqlite-null-and-unique
+            # So need to manually check that
+            checkUnique(conn, id, role, domain, tenant_id)
+
+            sql = "INSERT INTO luxon_user_role "\
+                  "(`id`,`role_id`,`tenant_id`,`user_id`," \
+                  "`domain`,`creation_time`) "\
+                  "VALUES (?,?,?,?,?,?)"
+            user_role_id = str(uuid4())
+            conn.execute(sql, (user_role_id, role, tenant_id,
+                               id, domain, now()))
+            conn.commit()
+            user_role = {"id": user_role_id,
+                         "user_id": id,
+                         "role_id": role,
+                         "domain": domain,
+                         "tenant_id": tenant_id}
+            return json.dumps(user_role, indent=4)
 
 @register_resource('DELETE', '/v1/rbac/user/{id}/{role}')
 @register_resource('DELETE', '/v1/rbac/user/{id}/{role}/{domain}')
