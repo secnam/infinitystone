@@ -177,3 +177,29 @@ def model(ModelClass, id=None, values=None, hide=None):
         model.update(values)
 
     return model
+
+def parse_sql_where(where):
+    """Generates an SQL WHERE string.
+
+    Will replace None's with IS NULL's.
+
+    Args:
+        where (dict): Containing SQL search string
+                      Eg: {"foo": 1, "bar": None}
+    Returns:
+        Tuple containing:
+            string that can be used after WHERE in SQL statement,
+            along with a list of the values.
+        Eg. ("foo=? AND bar IS NULL", [ 1 ])
+    :return:
+    """
+    vals = []
+    query = []
+    for k in where:
+        if where[k] is None:
+            query.append(k + " IS NULL")
+        else:
+            query.append(k + "=?")
+            vals.append(where[k])
+
+    return (" AND ".join(query), vals)
