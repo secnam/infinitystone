@@ -191,7 +191,6 @@ def parse_sql_where(where):
             string that can be used after WHERE in SQL statement,
             along with a list of the values.
         Eg. ("foo=? AND bar IS NULL", [ 1 ])
-    :return:
     """
     vals = []
     query = []
