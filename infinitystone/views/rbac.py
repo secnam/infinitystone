@@ -72,15 +72,11 @@ def check_unique(conn, id, role, domain, tenant_id):
 def check_context_auth(conn, user_id, domain, tenant_id):
     """Verify if users has jurisdiction over requested domain/tenant.
 
-    The default Root user can assign any role to any user, if and only if
-    the user exists in the supplied tenant and domain.
+    The default Root user can assign any role to any user.
 
     Only users with Admin or Root roles are allowed to assign roles to
-    users. This function will raise an error if
-        * the requesting user is not an admin user on
-          the requested domain/tenant.
-        * the requested user does not exist in
-          the requested domain/tenant.
+    users. This function will raise an error if the requesting user is
+    not an admin user on the requested domain/tenant.
 
     Args:
         conn (obj): DB connection object.
@@ -88,7 +84,6 @@ def check_context_auth(conn, user_id, domain, tenant_id):
         domain (str): Name of the domain.
         tenant_id (str): UUID of the tenant.
     """
-    # Checking if Requesting user is Admin/Root in domain and tenant
     req_user_id = g.current_request.token.user_id
     if req_user_id != '00000000-0000-0000-0000-000000000000':
         cur = conn.execute("SELECT id FROM luxon_role WHERE name=?",
@@ -110,21 +105,14 @@ def check_context_auth(conn, user_id, domain, tenant_id):
                                ": domain '%s', tenant_id '%s'"
                                % (req_user_id, domain, tenant_id))
 
-    # Checking if Requested User belongs in domain/tenant
-    where = {'id': user_id,
-             'domain': domain,
-             'tenant_id': tenant_id}
-    query, vals = parse_sql_where(where)
-    sql = "SELECT id FROM luxon_user WHERE " + query
-    cur = conn.execute(sql, vals)
-    if not cur.fetchone():
-        raise AccessDenied("User %s does not exist in context - "
-                           "domain: '%s', tenant_id: '%s'"
-                           % (user_id, domain, tenant_id))
-
 
 @register_resource('GET', '/v1/rbac/domains')
 def rbac_domains(req, resp):
+    """Supplies a List of available domains.
+        Supplies a List of available domains.
+
+        Used when assigning a user's role.
+        """
     search = req.query_params.get('term')
     domains_list = user_domains(req.token.user_id)
     if search is not None:
@@ -136,21 +124,53 @@ def rbac_domains(req, resp):
     return domains_list
 
 
+@register_resource('GET', '/v1/rbac/tenants')
+def rbac_tenants(req, resp):
+    """Supplies a List of available tenants.
+    Supplies a List of available tenants.
+
+    Used when assigning a user's role.
+    """
+    user_id = req.token.user_id
+    if user_id == "00000000-0000-0000-0000-000000000000":
+        sql = "SELECT id,name FROM luxon_tenant"
+    else:
+        sql = "SELECT luxon_user_role.tenant_id,name FROM luxon_user_role" \
+          ",luxon_tenant WHERE luxon_user_role.tenant_id=luxon_tenant.id " \
+          "AND user_id=?"
+    tenants = {}
+    with db() as conn:
+        cur = conn.execute(sql, user_id)
+        for r in cur.fetchall():
+            tenants[r['id']] = r['name']
+        return json.dumps(tenants)
+
+
+@register_resource('GET', '/v1/rbac/roles')
+def rbac_roles(req, resp):
+    """Supplies a List of available roles.
+    Supplies a List of available roles.
+
+    Used when assigning a user's role.
+    """
+    sql = "SELECT id,name FROM luxon_role"
+    roles = {}
+    with db() as conn:
+        cur = conn.execute(sql)
+        for r in cur.fetchall():
+            roles[r['id']] = r['name']
+        return json.dumps(roles)
+
+
 @register_resource('GET', '/v1/rbac/user/{id}')
 def user_roles(req, resp, id):
-    sql = "SELECT * FROM luxon_user_role WHERE " \
-          "user_id=?"
-    vals = [ id ]
-    domain = req.get_header("X-Domain", default=None)
-    if domain:
-        sql += " AND domain=?"
-        vals.append(domain)
-    tenant_id = req.get_header('X-Tenant-Id', default=None)
-    if tenant_id:
-        sql += " AND tenant_id=?"
-        vals.append(tenant_id)
+    sql = "SELECT luxon_user_role.*,luxon_tenant.name as tenant_name," \
+          "luxon_role.name as role_name FROM luxon_user_role LEFT JOIN " \
+          "luxon_tenant ON luxon_user_role.tenant_id=luxon_tenant.id " \
+          "LEFT JOIN luxon_role ON luxon_user_role.role_id = luxon_role.id " \
+          "WHERE user_id=?"
     with db() as conn:
-        cur = conn.execute(sql, vals)
+        cur = conn.execute(sql, id)
         return json.dumps(cur.fetchall())
 
 
