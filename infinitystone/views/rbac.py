@@ -112,9 +112,22 @@ def rbac_domains(req, resp):
         Supplies a List of available domains.
 
         Used when assigning a user's role.
-        """
+    """
     search = req.query_params.get('term')
-    domains_list = user_domains(req.token.user_id)
+    # (@vuader) Because the Root user can and have to be able to
+    # assign Roles on ANY domain, and this view is used for that
+    # purpose, we need to select ALL domains for the Root user.
+    user_id = req.token.user_id
+    if user_id == "00000000-0000-0000-0000-000000000000":
+        sql = "SELECT name FROM luxon_domain"
+        with db() as conn:
+            cur = conn.execute(sql)
+            result = cur.fetchall()
+        domains_list = []
+        for r in result:
+            domains_list.append(r['name'])
+    else:
+        domains_list = user_domains(req.token.user_id)
     if search is not None:
         filtered = []
         for domain in domains_list:
@@ -133,7 +146,7 @@ def rbac_tenants(req, resp):
     """
     user_id = req.token.user_id
     if user_id == "00000000-0000-0000-0000-000000000000":
-        sql = "SELECT id,name FROM luxon_tenant"
+        sql = "SELECT id as tenant_id,name FROM luxon_tenant"
     else:
         sql = "SELECT luxon_user_role.tenant_id,name FROM luxon_user_role" \
           ",luxon_tenant WHERE luxon_user_role.tenant_id=luxon_tenant.id " \
@@ -142,7 +155,7 @@ def rbac_tenants(req, resp):
     with db() as conn:
         cur = conn.execute(sql, user_id)
         for r in cur.fetchall():
-            tenants[r['id']] = r['name']
+            tenants[r['tenant_id']] = r['name']
         return json.dumps(tenants)
 
 
